@@ -40,7 +40,7 @@ export default function AdminPage() {
         const numMatches = stage === "round16" ? 8 : stage === "quarter" ? 4 : stage === "semi" ? 2 : 1;
 
         for (let i = 1; i <= numMatches; i++) {
-          const prefix = sport.slice(0, 4); // foot, badm, cric, voll
+          const prefix = sport === "football" ? "foot" : sport === "badminton" ? "bad" : sport === "cricket" ? "cri" : "vol";
           const stageCode = stage === "round16" ? "r16" : stage === "quarter" ? "q" : stage === "semi" ? "semi" : "final";
           const matchId = `${prefix}-${stageCode}-${i}`;
 
@@ -107,8 +107,13 @@ export default function AdminPage() {
 
         // Overlay the Excel data perfectly onto the matching skeleton nodes
         data.forEach((row) => {
-          const { Sport, Stage, MatchID, MatchTitle, Team1, Team2, Score1, Score2, Status, WinnerId, NextMatchId } = row;
+          let { Sport, Stage, MatchID, MatchTitle, Team1, Team2, Score1, Score2, Status, WinnerId, NextMatchId } = row;
           if (!Sport || !Stage || !MatchID) return;
+
+          // Auto-correct broken prefixes from older spreadsheet templates
+          MatchID = MatchID.replace("badm-", "bad-").replace("cric-", "cri-").replace("voll-", "vol-");
+          if (WinnerId) WinnerId = WinnerId.replace("badm-", "bad-").replace("cric-", "cri-").replace("voll-", "vol-");
+          if (NextMatchId) NextMatchId = NextMatchId.replace("badm-", "bad-").replace("cric-", "cri-").replace("voll-", "vol-");
 
           if (newBracket[Sport] && newBracket[Sport][Stage]) {
             const matchIndex = newBracket[Sport][Stage].findIndex((m: any) => m.id === MatchID);
