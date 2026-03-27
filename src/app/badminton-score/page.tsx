@@ -135,6 +135,30 @@ export default function BadmintonScoreboard() {
     await pushToFirestore(updatedScores); // Auto Push
   };
 
+  const subtractPoint = async (player: "A" | "B") => {
+    if (matchWinner) return; // Overall Over!
+
+    const tieWinner = scores[activeTie].sets.filter(s => s.a > s.b).length >= 2 || scores[activeTie].sets.filter(s => s.b > s.a).length >= 2;
+    if (tieWinner) return; // Sub format over!
+
+    if (player === "A" && scoreA === 0) return;
+    if (player === "B" && scoreB === 0) return;
+
+    // Save history before altering
+    setHistory([...history, { activeTie, scores: JSON.parse(JSON.stringify(scores)), serving }]);
+
+    const nextScoreA = player === "A" ? scoreA - 1 : scoreA;
+    const nextScoreB = player === "B" ? scoreB - 1 : scoreB;
+
+    const updatedScores = {
+      ...scores,
+      [activeTie]: { ...scores[activeTie], scoreA: nextScoreA, scoreB: nextScoreB }
+    };
+
+    setScores(updatedScores);
+    await pushToFirestore(updatedScores); // Auto Push
+  };
+
   const undo = async () => {
     if (history.length === 0) return;
     const last = history[history.length - 1];
@@ -152,8 +176,8 @@ export default function BadmintonScoreboard() {
     <DashboardLayout>
       <div className="flex flex-col gap-6 max-w-4xl mx-auto h-full">
         {/* Match Selector Bar */}
-        <div className="bg-neutral-900/60 p-4 rounded-2xl border border-neutral-800 flex flex-wrap gap-4 items-center justify-between">
-          <div className="flex gap-2 items-center">
+        <div className="bg-neutral-900/60 p-3 md:p-4 rounded-2xl border border-neutral-800 flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div className="flex flex-wrap gap-2 items-center w-full md:w-auto justify-center md:justify-start">
             <select 
               value={selectedStage} 
               onChange={(e) => { setSelectedStage(e.target.value as any); setSelectedMatchId(""); }}
@@ -167,7 +191,7 @@ export default function BadmintonScoreboard() {
             <select 
               value={selectedMatchId} 
               onChange={(e) => setSelectedMatchId(e.target.value)}
-              className="bg-black border border-neutral-800 rounded-xl px-3 py-1.5 text-white text-xs font-bold min-w-[200px]"
+              className="bg-black border border-neutral-800 rounded-xl px-3 py-1.5 text-white text-xs font-bold w-full md:w-auto md:min-w-[200px]"
             >
               <option value="">-- Select Match --</option>
               {matches.map(m => (
@@ -188,7 +212,7 @@ export default function BadmintonScoreboard() {
           </div>
 
           {/* Sub-Match Toggle Bar */}
-          <div className="flex gap-1 bg-neutral-950 border border-neutral-800 p-1 rounded-xl">
+          <div className="flex gap-1 bg-neutral-950 border border-neutral-800 p-1 rounded-xl w-full md:w-auto justify-center overflow-x-auto">
             {(["S1", "D", "S2"] as TieKey[]).map((tie) => {
               const tieWon = scores[tie].sets.filter(s => s.a > s.b).length >= 2 || scores[tie].sets.filter(s => s.b > s.a).length >= 2;
               return (
@@ -253,39 +277,66 @@ export default function BadmintonScoreboard() {
             ))}
           </div>
         </GlassCard>
-
         {/* Scoreboard Panels */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 h-full items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 flex-1 h-full items-stretch mt-2">
           {/* Team A */}
-          <div className={`relative flex flex-col justify-center items-center rounded-3xl border ${serving === "A" ? "border-cyan-500 bg-cyan-500/5" : "border-neutral-900 bg-neutral-900/30"} p-8 transition-all`}>
-            <span className="text-center text-xl font-bold text-white mb-6">{teamA}</span>
-            <button onClick={() => addPoint("A")} disabled={!!matchWinner} className="group flex flex-col items-center justify-center w-full flex-1 touch-manipulation disabled:opacity-40">
-              <span className="text-7xl md:text-9xl font-extrabold font-mono text-cyan-400 group-active:scale-95 transition-transform duration-100">
+          <div className={`relative flex flex-col justify-between items-center rounded-3xl border ${serving === "A" ? "border-cyan-500 bg-cyan-500/5 shadow-[0_0_30px_rgba(6,182,212,0.1)]" : "border-neutral-800 bg-neutral-900/40"} p-5 md:p-8 transition-all min-h-[350px]`}>
+            {/* Team Header */}
+            <div className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 text-center mb-5 md:mb-6 shadow-inner">
+              <span className="text-xl md:text-2xl font-bold text-white tracking-widest uppercase truncate px-2 block">{teamA}</span>
+            </div>
+            
+            {/* Main Score Box */}
+            <div className={`w-full flex-1 border ${serving === "A" ? "border-cyan-500/40 bg-black" : "border-neutral-800 bg-black/60"} rounded-3xl flex items-center justify-center py-10 mb-5 md:mb-6 shadow-2xl relative overflow-hidden`}>
+              <span className="text-8xl md:text-9xl font-extrabold font-mono text-cyan-400 z-10 transition-transform duration-200">
                 {scoreA}
               </span>
-              {!matchWinner && <span className="text-xs text-neutral-500 mt-4 group-hover:text-cyan-300">Tap to add point</span>}
-            </button>
-            {serving === "A" && !matchWinner && (
-              <div className="absolute inset-x-0 bottom-4 flex justify-center">
-                <span className="bg-cyan-500 text-black text-xs font-extrabold px-3 py-1 rounded-full animate-pulse">SERVING ({serveSide} COURT)</span>
-              </div>
-            )}
+              {serving === "A" && !matchWinner && (
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-cyan-500 text-black text-[10px] uppercase font-extrabold px-3 py-1 rounded-full animate-pulse z-20 whitespace-nowrap">
+                  Serving ({serveSide})
+                </div>
+              )}
+            </div>
+
+            {/* Controls Box */}
+            <div className="w-full grid grid-cols-1 gap-3">
+              <button onClick={() => addPoint("A")} disabled={!!matchWinner} className="w-full flex items-center justify-center bg-emerald-500 hover:bg-emerald-400 text-black text-4xl font-black py-4 rounded-2xl transition-all active:scale-95 disabled:opacity-30 disabled:active:scale-100 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                +
+              </button>
+              <button onClick={() => subtractPoint("A")} disabled={!!matchWinner || scoreA === 0} className="w-full flex items-center justify-center bg-neutral-700 hover:bg-neutral-600 border border-white/10 text-white text-4xl font-black py-2 md:py-3 rounded-xl transition-all active:scale-95 disabled:opacity-30 disabled:active:scale-100">
+                -
+              </button>
+            </div>
           </div>
 
           {/* Team B */}
-          <div className={`relative flex flex-col justify-center items-center rounded-3xl border ${serving === "B" ? "border-emerald-500 bg-emerald-500/5" : "border-neutral-900 bg-neutral-900/30"} p-8 transition-all`}>
-            <span className="text-center text-xl font-bold text-white mb-6">{teamB}</span>
-            <button onClick={() => addPoint("B")} disabled={!!matchWinner} className="group flex flex-col items-center justify-center w-full flex-1 touch-manipulation disabled:opacity-40">
-              <span className="text-7xl md:text-9xl font-extrabold font-mono text-emerald-400 group-active:scale-95 transition-transform duration-100">
+          <div className={`relative flex flex-col justify-between items-center rounded-3xl border ${serving === "B" ? "border-emerald-500 bg-emerald-500/5 shadow-[0_0_30px_rgba(16,185,129,0.1)]" : "border-neutral-800 bg-neutral-900/40"} p-5 md:p-8 transition-all min-h-[350px]`}>
+            {/* Team Header */}
+            <div className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 text-center mb-5 md:mb-6 shadow-inner">
+              <span className="text-xl md:text-2xl font-bold text-white tracking-widest uppercase truncate px-2 block">{teamB}</span>
+            </div>
+            
+            {/* Main Score Box */}
+            <div className={`w-full flex-1 border ${serving === "B" ? "border-emerald-500/40 bg-black" : "border-neutral-800 bg-black/60"} rounded-3xl flex items-center justify-center py-10 mb-5 md:mb-6 shadow-2xl relative overflow-hidden`}>
+              <span className="text-8xl md:text-9xl font-extrabold font-mono text-emerald-400 z-10 transition-transform duration-200">
                 {scoreB}
               </span>
-              {!matchWinner && <span className="text-xs text-neutral-500 mt-4 group-hover:text-emerald-300">Tap to add point</span>}
-            </button>
-            {serving === "B" && !matchWinner && (
-              <div className="absolute inset-x-0 bottom-4 flex justify-center">
-                <span className="bg-emerald-500 text-black text-xs font-extrabold px-3 py-1 rounded-full animate-pulse">SERVING ({serveSide} COURT)</span>
-              </div>
-            )}
+              {serving === "B" && !matchWinner && (
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-emerald-500 text-black text-[10px] uppercase font-extrabold px-3 py-1 rounded-full animate-pulse z-20 whitespace-nowrap">
+                  Serving ({serveSide})
+                </div>
+              )}
+            </div>
+
+            {/* Controls Box */}
+            <div className="w-full grid grid-cols-1 gap-3">
+              <button onClick={() => addPoint("B")} disabled={!!matchWinner} className="w-full flex items-center justify-center bg-emerald-500 hover:bg-emerald-400 text-black text-4xl font-black py-4 rounded-2xl transition-all active:scale-95 disabled:opacity-30 disabled:active:scale-100 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                +
+              </button>
+              <button onClick={() => subtractPoint("B")} disabled={!!matchWinner || scoreB === 0} className="w-full flex items-center justify-center bg-neutral-700 hover:bg-neutral-600 border border-white/10 text-white text-4xl font-black py-2 md:py-3 rounded-xl transition-all active:scale-95 disabled:opacity-30 disabled:active:scale-100">
+                -
+              </button>
+            </div>
           </div>
         </div>
 

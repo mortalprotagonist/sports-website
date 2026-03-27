@@ -88,16 +88,16 @@ export default function Home() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {liveMatches.map((match: any) => (
-              <GlassCard key={match.id} className="border-red-500/20 bg-gradient-to-r from-neutral-900/40 to-black/60">
-                <div className="flex justify-between items-center">
+              <GlassCard key={match.id} className="border-red-500/20 bg-gradient-to-r from-neutral-900/40 to-black/60 p-4">
+                <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
                   <div>
                     <span className="text-xs bg-red-500/10 text-red-400 px-2 py-1 rounded-md font-semibold">
                       {match.sport}
                     </span>
-                    <h3 className="font-bold text-lg mt-2">{match.teams}</h3>
+                    <h3 className="font-bold text-lg mt-2 leading-tight">{match.teams}</h3>
                     <p className="text-xs text-neutral-400 mt-1">{match.status}</p>
                   </div>
-                  <div className="font-sans font-black text-3xl tracking-wider text-red-500">
+                  <div className="font-sans font-black text-xl md:text-3xl tracking-wider text-red-500 md:text-right">
                     {match.score}
                   </div>
                 </div>
