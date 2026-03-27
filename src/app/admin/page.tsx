@@ -8,6 +8,7 @@ import { MultiSportData, SportData, MatchNode } from "@/types/bracket";
 import * as XLSX from "xlsx";
 import { db } from "@/lib/firebase";
 import { doc, setDoc } from "firebase/firestore";
+import { mockBracket } from "@/components/bracket/mock-data";
 
 const DEPARTMENTS = [
   "CSE", "ECE", "ME", "CE", "EEE", "IT", "BT", "AE",
@@ -88,27 +89,56 @@ export default function AdminPage() {
         const ws = wb.Sheets[wsname];
         const data = XLSX.utils.sheet_to_json(ws) as any[];
 
-        const newBracket: any = { football: {}, badminton: {}, cricket: {}, volleyball: {} };
+        // Start by completely cloning the default structural mock bracket
+        const newBracket: any = JSON.parse(JSON.stringify(mockBracket));
 
+        // Wipe all existing team data from the clone so we have a pure "TBA" skeleton
+        Object.keys(newBracket).forEach((sp) => {
+          Object.keys(newBracket[sp]).forEach((st) => {
+            newBracket[sp][st].forEach((m: any) => {
+              m.teams[0] = { ...m.teams[0], name: "TBA", score: undefined };
+              m.teams[1] = { ...m.teams[1], name: "TBA", score: undefined };
+              m.winnerId = undefined;
+              m.status = "upcoming";
+              m.setScores = undefined;
+            });
+          });
+        });
+
+        // Overlay the Excel data perfectly onto the matching skeleton nodes
         data.forEach((row) => {
           const { Sport, Stage, MatchID, MatchTitle, Team1, Team2, Score1, Score2, Status, WinnerId, NextMatchId } = row;
           if (!Sport || !Stage || !MatchID) return;
 
-          if (!newBracket[Sport]) newBracket[Sport] = { round16: [], quarter: [], semi: [], final: [] };
-          if (!newBracket[Sport][Stage]) newBracket[Sport][Stage] = [];
-
-          newBracket[Sport][Stage].push({
-            id: MatchID,
-            title: MatchTitle || `Match ${MatchID}`,
-            teams: [
-              { id: `${MatchID}-t1`, name: Team1 || "TBA", score: Score1 !== undefined ? Number(Score1) : undefined },
-              { id: `${MatchID}-t2`, name: Team2 || "TBA", score: Score2 !== undefined ? Number(Score2) : undefined }
-            ],
-            stage: Stage,
-            status: Status || "upcoming",
-            winnerId: WinnerId || undefined,
-            nextMatchId: NextMatchId || undefined
-          });
+          if (newBracket[Sport] && newBracket[Sport][Stage]) {
+            const matchIndex = newBracket[Sport][Stage].findIndex((m: any) => m.id === MatchID);
+            
+            if (matchIndex !== -1) {
+              const match = newBracket[Sport][Stage][matchIndex];
+              if (MatchTitle) match.title = MatchTitle;
+              if (Team1) match.teams[0].name = Team1;
+              if (Team2) match.teams[1].name = Team2;
+              if (Score1 !== undefined && Score1 !== "") match.teams[0].score = Number(Score1);
+              if (Score2 !== undefined && Score2 !== "") match.teams[1].score = Number(Score2);
+              if (Status) match.status = Status;
+              if (WinnerId) match.winnerId = WinnerId;
+              if (NextMatchId) match.nextMatchId = NextMatchId;
+            } else {
+              // Custom node fallback
+              newBracket[Sport][Stage].push({
+                id: MatchID,
+                title: MatchTitle || `Match ${MatchID}`,
+                teams: [
+                  { id: `${MatchID}-t1`, name: Team1 || "TBA", score: Score1 !== undefined ? Number(Score1) : undefined },
+                  { id: `${MatchID}-t2`, name: Team2 || "TBA", score: Score2 !== undefined ? Number(Score2) : undefined }
+                ],
+                stage: Stage,
+                status: Status || "upcoming",
+                winnerId: WinnerId || undefined,
+                nextMatchId: NextMatchId || undefined
+              });
+            }
+          }
         });
 
         // Push to Firestore and reload via onSnapshot

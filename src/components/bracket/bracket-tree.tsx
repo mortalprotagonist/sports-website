@@ -61,7 +61,7 @@ export function BracketTree() {
   return (
     <div 
       ref={containerRef}
-      className="relative flex gap-12 md:gap-24 p-8 overflow-x-auto w-full h-[calc(100vh-160px)] items-center select-none"
+      className="relative flex gap-12 md:gap-24 p-8 overflow-auto w-full h-[calc(100vh-160px)] min-h-[700px] md:min-h-[800px] items-center select-none"
     >
       {/* SVG Container overlay */}
       <svg className="absolute inset-0 w-full h-full pointer-events-none z-0">
@@ -130,7 +130,7 @@ export function BracketTree() {
 
       {/* Finals */}
       {currentSportData?.final?.length > 0 && (
-        <div className="flex flex-col justify-center h-full z-10 flex-shrink-0 w-64">
+        <div className="flex flex-col justify-center h-full z-10 flex-shrink-0 w-64 relative">
           {currentSportData.final.map((node: MatchNode) => (
             <div id={`node-${node.id}`} key={node.id}>
               <MatchCard
@@ -144,6 +144,9 @@ export function BracketTree() {
           ))}
         </div>
       )}
+
+      {/* Ghost Element to prevent right-edge scroll clipping in WebKit */}
+      <div className="w-8 md:w-16 flex-shrink-0" />
     </div>
   );
 }
