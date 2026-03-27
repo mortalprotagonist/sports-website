@@ -61,7 +61,10 @@ export function MatchProvider({ children }: { children: ReactNode }) {
           setBracketData(merged);
           setError(null);
         } else {
-          setDoc(doc(db, "tournaments", "main"), mockBracket);
+          console.warn("Tournaments document does not exist in Firebase yet. Using local mock data structure.");
+          // CRITICALLY IMPORTANT: WE MUST NOT AUTOMATICALLY `setDoc` HERE! 
+          // If the network stutters on page load, this was wiping the entire live database back to `mockBracket`!!
+          setBracketData(mockBracket);
         }
       },
       (err) => {
