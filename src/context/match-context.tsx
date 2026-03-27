@@ -37,7 +37,7 @@ export function MatchProvider({ children }: { children: ReactNode }) {
     const unsub = onSnapshot(
       doc(db, "tournaments", "main"), 
       (docSnap) => {
-        if (docSnap.metadata.hasPendingWrites) return;
+
 
         if (docSnap.exists()) {
           const cloudData = docSnap.data() as MultiSportData;
