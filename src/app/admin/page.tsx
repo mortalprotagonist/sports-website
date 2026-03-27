@@ -107,7 +107,18 @@ export default function AdminPage() {
 
         // Overlay the Excel data perfectly onto the matching skeleton nodes
         data.forEach((row) => {
-          let { Sport, Stage, MatchID, MatchTitle, Team1, Team2, Score1, Score2, Status, WinnerId, NextMatchId } = row;
+          let Sport = row.Sport ? String(row.Sport).trim() : undefined;
+          let Stage = row.Stage ? String(row.Stage).trim() : undefined;
+          let MatchID = row.MatchID ? String(row.MatchID).trim() : undefined;
+          let MatchTitle = row.MatchTitle ? String(row.MatchTitle).trim() : undefined;
+          let Team1 = row.Team1 ? String(row.Team1).trim() : undefined;
+          let Team2 = row.Team2 ? String(row.Team2).trim() : undefined;
+          let Status = row.Status ? String(row.Status).trim() : undefined;
+          let WinnerId = row.WinnerId ? String(row.WinnerId).trim() : undefined;
+          let NextMatchId = row.NextMatchId ? String(row.NextMatchId).trim() : undefined;
+          let Score1 = row.Score1;
+          let Score2 = row.Score2;
+
           if (!Sport || !Stage || !MatchID) return;
 
           // Auto-correct broken prefixes from older spreadsheet templates
@@ -174,7 +185,13 @@ export default function AdminPage() {
             </button>
             <label className="bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 px-3 py-2 rounded-xl text-xs font-bold cursor-pointer transition-all">
               📤 Upload Excel
-              <input type="file" accept=".xlsx, .xls" className="hidden" onChange={handleFileUpload} />
+              <input 
+                type="file" 
+                accept=".xlsx, .xls" 
+                className="hidden" 
+                onChange={handleFileUpload} 
+                onClick={(e) => (e.currentTarget.value = "")}
+              />
             </label>
             <button 
               onClick={async () => {
